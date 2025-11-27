@@ -34,7 +34,7 @@ class About {
     public function about() {
         $wallabag = !empty($this->configuration->wallabag) ? [
             'url' => $this->configuration->wallabag, // string
-            'version' => $this->configuration->wallabagVersion, // int
+            'version' => intval($this->configuration->wallabagVersion), // int
         ] : null;
 
         $configuration = [
