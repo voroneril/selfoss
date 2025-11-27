@@ -62,7 +62,7 @@ class feed extends \spouts\spout {
     //
 
     public function load(array $params) {
-        $feedData = $this->feed->load(htmlspecialchars_decode($params['url']));
+        $feedData = $this->feed->load(htmlspecialchars_decode($params['url']), true);
         $this->items = $feedData['items'];
         $this->htmlUrl = $feedData['htmlUrl'];
         $this->title = $feedData['title'];
@@ -104,7 +104,8 @@ class feed extends \spouts\spout {
             $icon = null;
             $link = htmlspecialchars_decode((string) $item->get_link(), ENT_COMPAT); // SimplePie sanitizes URLs
             $unixDate = $item->get_date('U');
-            $date = $unixDate !== null ? new \DateTimeImmutable('@' . $unixDate) : new \DateTimeImmutable();
+            // TODO: remove the `false` check once we upgrade to SimplePie 1.8
+            $date = $unixDate !== null && $unixDate !== false ? new \DateTimeImmutable('@' . $unixDate) : new \DateTimeImmutable();
             $author = $this->getAuthorString($item);
 
             yield new Item(
