@@ -41,8 +41,19 @@ class FeedReader {
      *
      * @return array{items: \SimplePie\Item[], htmlUrl: string, title: ?string}
      */
-    public function load($url) {
+    public function load($url, $disable_ssl_check=false) {
         @$this->simplepie->set_feed_url($url);
+        
+        if ($disable_ssl_check) {
+            $this->simplepie->set_curl_options(
+                    array(
+                        CURLOPT_SSL_VERIFYHOST => false,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                        //CURLOPT_CONNECTTIMEOUT => 0,
+                        CURLOPT_TIMEOUT => 20
+                    )
+                );
+        }
         // fetch items
         @$this->simplepie->init();
 
