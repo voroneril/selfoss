@@ -114,6 +114,12 @@ class ContentLoader {
 
         // logging
         $this->logger->debug('---');
+        
+        if( strpos($source['title'], '[disabled]') !== false) {
+            $this->logger->debug('skip fetching source "' . $source['title'] . ' (id: ' . $source['id'] . ') ');
+            return;
+        }
+        
         $this->logger->debug('start fetching source "' . $source['title'] . ' (id: ' . $source['id'] . ') ');
 
         // get spout
@@ -167,7 +173,7 @@ class ContentLoader {
                     $itemDate = new \DateTimeImmutable();
                 }
                 if ($itemDate < $minDate) {
-                    $this->logger->debug('item "' . $item->getTitle() . '" (' . $itemDate->format(\DateTimeInterface::ATOM) . ') older than ' . $this->configuration->itemsLifetime . ' days');
+                    $this->logger->debug('item "' . $item->getTitle() . '" (' . $itemDate->format(\DateTime::ATOM) . ') older than ' . $this->configuration->itemsLifetime . ' days');
                     continue;
                 }
 
@@ -322,8 +328,8 @@ class ContentLoader {
      */
     protected function filter($source, $title, $content) {
         if (strlen(trim($source['filter'])) !== 0) {
-            $resultTitle = @preg_match($source['filter'], $title);
-            $resultContent = @preg_match($source['filter'], $content);
+            $resultTitle = @preg_match('/(*UTF8)' . $source['filter']. '/', $title);
+            $resultContent = @preg_match('/(*UTF8)' . $source['filter'] . '/', $content);
             if ($resultTitle === false || $resultContent === false) {
                 $this->logger->error('filter error: ' . $source['filter']);
 
@@ -417,28 +423,60 @@ class ContentLoader {
      * @return ?string path in the favicons directory
      */
     protected function fetchIcon($url) {
+        $result = null;
         try {
             $data = $this->webClient->request($url);
             $format = Image::FORMAT_PNG;
             $image = $this->imageHelper->loadImage($data, $format, 30, null);
 
             if ($image !== null) {
-                return $this->iconStore->store($url, $image->getData());
+                $result = $this->iconStore->store($url, $image->getData());
             } else {
                 $this->logger->error('icon generation error: ' . $url);
             }
         } catch (\Throwable $e) {
             $this->logger->error("failed to retrieve image $url,", ['exception' => $e]);
-
-            return null;
+            $result = null;
         } catch (\Exception $e) {
             // For PHP 5
             $this->logger->error("failed to retrieve image $url,", ['exception' => $e]);
+            $result = null;
+        }
+        
+        if ($result === null) {
+            if($url == "https://forum.zoneofgames.ru/favicon.ico")
+                $newurl = "https://forum.zoneofgames.ru/uploads/monthly_2018_01/favicon.ico.1413ba6cf1f57ba7f01d3a14e3fff983.ico";
+            if($url == "https://www.mirf.ru/favicon.ico")
+                $newurl = "https://mfst.igromania.ru/wp-content/uploads/2019/03/cropped-MF_186_N03_2019_Logo_MF_Short_Black-32x32.png";
+            if($url == "https://static.hi-news.ru/touch-icon-iphone.png")
+                $newurl = "https://hi-news.ru/wp-content/themes/101media/favicon.ico";
+            if($url == "https://theoryandpractice.ru/favicon.ico")
+                $newurl = " https://theoryandpractice.ru/assets/favicon.ico";
+            if($url == "http://scfh.ru/touch-icon-iphone.png")
+                $newurl = " https://scfh.ru/favicon.ico";
+            if (isset($newurl)) {
+                try {
+                    $data = $this->webClient->request($newurl);
+                    $format = Image::FORMAT_PNG;
+                    $image = $this->imageHelper->loadImage($data, $format, 30, null);
 
-            return null;
+                    if ($image !== null) {
+                        $result = $this->iconStore->store($newurl, $image->getData());
+                    } else {
+                        $this->logger->error('icon generation error: ' . $newurl . " (retry #1)");
+                    }
+                } catch (\Throwable $e) {
+                    $this->logger->error("failed to retrieve image $newurl" . " (retry #1),", ['exception' => $e]);
+                    $result = null;
+                } catch (\Exception $e) {
+                    // For PHP 5
+                    $this->logger->error("failed to retrieve image $newurl" . " (retry #1),", ['exception' => $e]);
+                    $result = null;
+                }
+            }
         }
 
-        return null;
+        return $result;
     }
 
     /**
