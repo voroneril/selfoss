@@ -69,9 +69,9 @@ export function useSharers({ configuration, _ }) {
                 'w': {
                     label: _('share_wallabag_label'),
                     icon: <FontAwesomeIcon icon={icons.wallabag} />,
-                    action: ({url}) => {
-                        if (configuration.wallabag.version === 2) {
-                            window.open(configuration.wallabag.url + '/bookmarklet?url=' + encodeURIComponent(url), undefined, 'noreferrer');
+                    action: ({url, title}) => {
+                        if (configuration.wallabag.version === 2 || configuration.wallabag.version === '2') {
+                            window.open(configuration.wallabag.url + '/bookmarklet?url=' + encodeURIComponent(url) + '&title=' + encodeURIComponent(title), undefined, 'noreferrer');
                         } else {
                             window.open(configuration.wallabag.url + '/?action=add&url=' + btoa(url), undefined, 'noreferrer');
                         }
